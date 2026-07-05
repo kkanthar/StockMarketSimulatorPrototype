@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>In The Black | SYSADMIN</title>
+    <style>
+        :root {
+            --bbg-bg: #050505; --bbg-panel: #111111; --bbg-border: #2a2a2a;
+            --bbg-text-main: #f5f5f5; --bbg-text-muted: #888888;
+            --bbg-orange: #f37021; --bbg-green: #00e676; --bbg-red: #ff3b30;
+            --font-stack: 'Neue Haas Grotesk', 'Aktiv Grotesk', 'Inter', sans-serif;
+        }
+        * { box-sizing: border-box; font-family: var(--font-stack); }
+        body { background-color: var(--bbg-bg); color: var(--bbg-text-main); margin: 0; padding: 20px; font-size: 14px; }
+        
+        .header { border-bottom: 1px solid var(--bbg-border); padding-bottom: 15px; margin-bottom: 20px; }
+        h2 { color: var(--bbg-orange); margin: 0; font-size: 1.5rem; }
+        .font-mono { font-family: 'SF Mono', Consolas, monospace; font-variant-numeric: tabular-nums; }
+        
+        .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 15px; }
+        .panel { background: var(--bbg-panel); border: 1px solid var(--bbg-border); padding: 15px; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: right; padding: 10px; border-bottom: 1px solid var(--bbg-border); }
+        th { color: var(--bbg-text-muted); font-size: 0.75rem; text-transform: uppercase; }
+        th:first-child, td:first-child { text-align: left; }
+        
+        button { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid var(--bbg-border); background: transparent; color: white; cursor: pointer; text-align: left; text-transform: uppercase; font-weight: bold; transition: 0.2s; }
+        button:hover:not(:disabled) { background: rgba(255,255,255,0.1); }
+        button:disabled { opacity: 0.3; cursor: not-allowed; }
+        
+        .text-green { color: var(--bbg-green); } .text-red { color: var(--bbg-red); }
+        .feed-item { padding: 8px 0; border-bottom: 1px dashed var(--bbg-border); font-size: 0.85rem; }
+
+        /* FINAL LEADERBOARD OVERLAY */
+        .final-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: var(--bbg-bg); z-index: 5000;
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .final-overlay.show { display: flex; }
+        .final-overlay h1 { color: var(--bbg-orange); font-size: 4rem; margin: 0; letter-spacing: 2px; }
+        .final-overlay p { color: var(--bbg-text-muted); font-size: 1.5rem; letter-spacing: 1px; margin-top: 10px; text-transform: uppercase; }
+        .final-overlay table { width: 80%; max-width: 1000px; margin-top: 40px; background: var(--bbg-panel); border: 1px solid var(--bbg-border); }
+        .final-overlay th, .final-overlay td { padding: 15px 20px; font-size: 1.2rem; }
+        
+        .btn-reset { margin-top: 40px; width: 300px; background: transparent; border: 2px solid var(--bbg-red); color: var(--bbg-red); font-size: 1.2rem; padding: 15px; text-align: center; }
+        .btn-reset:hover { background: var(--bbg-red); color: white; }
+    </style>
+</head>
+<body>
+
+    <div id="final-screen" class="final-overlay">
+        <h1>SESSION ENDED</h1>
+        <p>FINAL RESULTS POSTED</p>
+        <table id="final-leaderboard-table">
+            <thead><tr><th>Rnk</th><th>Desk</th><th>Net Worth</th><th>5D Ret</th><th>Inception Ret</th><th>Score</th></tr></thead>
+            <tbody></tbody>
+        </table>
+        <button onclick="resetSession()" class="btn-reset">RESET SESSION TO DAY 1</button>
+    </div>
+
+    <div class="header">
+        <h2>SYSADMIN OVERWATCH</h2>
+        <div style="color: var(--bbg-text-muted);">ACTIVE INJECTION: <strong id="active-injection" class="text-red">NONE</strong></div>
+    </div>
+
+    <div class="grid">
+        <div class="panel">
+            <h3 style="margin-top: 0; color: var(--bbg-text-muted);">LIVE LEADERBOARD (70/30 WEIGHTING)</h3>
+            <table id="leaderboard-table">
+                <thead><tr><th>Rnk</th><th>Desk</th><th>Net Worth</th><th>5D Ret</th><th>Inception Ret</th><th>Score</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        
+        <div class="panel">
+            <h3 style="margin-top: 0; color: var(--bbg-text-muted);">SIMULATION CONTROLS</h3>
+            <button id="btn-pause" onclick="togglePause()" style="border-left: 4px solid var(--bbg-orange);">PAUSE MARKET</button>
+            <button id="btn-end" onclick="endSession()" style="border-left: 4px solid var(--bbg-red);">END SESSION</button>
+
+            <h3 style="margin-top: 20px; color: var(--bbg-text-muted);">MACRO INJECTIONS</h3>
+            <button onclick="triggerInjection('recession')" style="border-left: 4px solid var(--bbg-red);">Recession (Bear)</button>
+            <button onclick="triggerInjection('tech_boom')" style="border-left: 4px solid var(--bbg-green);">Tech Boom</button>
+            <button onclick="triggerInjection('rate_hike')" style="border-left: 4px solid var(--bbg-orange);">Rate Hike</button>
+            <button onclick="triggerInjection('inflation')" style="border-left: 4px solid #8b5cf6;">Inflation Spike</button>
+            <button onclick="triggerInjection('recovery')" style="border-left: 4px solid #007aff;">Recovery</button>
+            
+            <h3 style="margin-top: 20px; color: var(--bbg-text-muted);">SECTOR INJECTIONS</h3>
+            <button onclick="triggerInjection('ai_boom')" style="border-left: 4px solid var(--bbg-green);">AI Boom (Tech)</button>
+            <button onclick="triggerInjection('energy_crisis')" style="border-left: 4px solid var(--bbg-orange);">Energy Crisis</button>
+            <button onclick="triggerInjection('retail_collapse')" style="border-left: 4px solid var(--bbg-red);">Retail Collapse</button>
+            <button onclick="triggerInjection('fintech_surge')" style="border-left: 4px solid var(--bbg-green);">Fintech Surge</button>
+            <button onclick="triggerInjection('health_scare')" style="border-left: 4px solid var(--bbg-red);">Health Scare</button>
+            <button onclick="triggerInjection('transport_disruption')" style="border-left: 4px solid var(--bbg-orange);">Transport Disruption</button>
+            <button onclick="triggerInjection('housing_crash')" style="border-left: 4px solid var(--bbg-red);">Housing Crash</button>
+            <button onclick="triggerInjection('industrial_slowdown')" style="border-left: 4px solid #888888;">Industrial Slowdown</button>
+
+            <h3 style="margin-top: 20px; color: var(--bbg-text-muted);">ACTION FEED</h3>
+            <div id="action-feed" class="font-mono"></div>
+        </div>
+    </div>
+
+    <script type="module" src="admin.js"></script>
+</body>
+</html>

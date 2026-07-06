@@ -1,17 +1,27 @@
 require('dotenv').config();
 const { initializeApp, cert } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
+const express = require('express'); // NEW: Required for cloud hosting
 
-// Using the direct relative path ensures Node can always find the key file
-const serviceAccount = require('../serviceAccountKey.json');
+// 1. Secure Credential Injection
+let serviceAccount;
+try {
+    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+        // Cloud environment: reads the raw JSON string from Render's secure vault
+        serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    } else {
+        // Local fallback: uses your local file
+        serviceAccount = require('../serviceAccountKey.json'); 
+    }
+} catch (error) {
+    console.error("CRITICAL: Failed to load Firebase credentials. Ensure FIREBASE_SERVICE_ACCOUNT is set.", error);
+    process.exit(1);
+}
 
-initializeApp({
-    credential: cert(serviceAccount)
-});
-
+initializeApp({ credential: cert(serviceAccount) });
 const db = getFirestore();
 
-const TICK_INTERVAL_MS = 4000; // 4 seconds
+const TICK_INTERVAL_MS = 4000;
 const GLOBAL_UPWARD_BIAS = 0.0005;
 
 async function gameTick() {
@@ -23,18 +33,16 @@ async function gameTick() {
         let marketData = marketDoc.data();
         if (marketData.isPaused) return;
 
-        // 1. Process Macro Injections
+        // Process Macro Injections
         let injectionModifier = { trend: 0, volMultiplier: 1, targetSector: 'all' };
         if (marketData.activeInjection && marketData.injectionTicksLeft > 0) {
             switch(marketData.activeInjection) {
-                // Global Macro Events
                 case 'recession': injectionModifier = { trend: -0.015, volMultiplier: 1.5, targetSector: 'all' }; break;
                 case 'tech_boom': injectionModifier = { trend: 0.025, volMultiplier: 1.2, targetSector: 'Tech' }; break;
                 case 'rate_hike': injectionModifier = { trend: -0.02, volMultiplier: 1.1, targetSector: 'all' }; break;
                 case 'inflation': injectionModifier = { trend: 0, volMultiplier: 2.5, targetSector: 'all' }; break;
                 case 'recovery': injectionModifier = { trend: 0.005, volMultiplier: 0.8, targetSector: 'all' }; break;
                 
-                // Targeted Sector Events
                 case 'ai_boom': injectionModifier = { trend: 0.035, volMultiplier: 1.5, targetSector: 'Tech' }; break;
                 case 'energy_crisis': injectionModifier = { trend: 0.04, volMultiplier: 2.0, targetSector: 'Energy' }; break;
                 case 'retail_collapse': injectionModifier = { trend: -0.03, volMultiplier: 1.8, targetSector: 'Retail' }; break;
@@ -48,7 +56,7 @@ async function gameTick() {
             if (marketData.injectionTicksLeft === 0) marketData.activeInjection = null;
         }
 
-        // 2. Update Stock Prices
+        // Update Stock Prices
         const newStocks = marketData.stocks.map(stock => {
             let activeTrend = stock.trend + GLOBAL_UPWARD_BIAS;
             let activeVol = stock.volatility;
@@ -63,7 +71,7 @@ async function gameTick() {
             return { ...stock, price: newPrice, prevPrice: stock.price };
         });
 
-        // 3. Batch Write: Market Update & Team Net Worths
+        // Batch Write
         const batch = db.batch();
         batch.update(marketRef, { 
             stocks: newStocks, 
@@ -76,13 +84,10 @@ async function gameTick() {
         teamsSnap.forEach(doc => {
             const team = doc.data();
             let portfolioValue = 0;
-            
             if (team.holdings) {
                 Object.keys(team.holdings).forEach(ticker => {
                     const liveStock = newStocks.find(s => s.ticker === ticker);
-                    if (liveStock) {
-                        portfolioValue += team.holdings[ticker].shares * liveStock.price;
-                    }
+                    if (liveStock) portfolioValue += team.holdings[ticker].shares * liveStock.price;
                 });
             }
             
@@ -101,5 +106,17 @@ async function gameTick() {
     }
 }
 
-setInterval(gameTick, TICK_INTERVAL_MS);
-console.log(`Game Engine running: Tick every ${TICK_INTERVAL_MS}ms`);
+// 2. HTTP Server Binding (Required by Cloud Hosts to prevent crashes)
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.get('/', (req, res) => {
+    res.send('In The Black: Game Engine is running.');
+});
+
+app.listen(PORT, () => {
+    console.log(`Health Check Server listening on port ${PORT}`);
+    // Boot the game tick loop only after the server successfully binds
+    setInterval(gameTick, TICK_INTERVAL_MS);
+    console.log(`Game Engine running: Tick every ${TICK_INTERVAL_MS}ms`);
+});

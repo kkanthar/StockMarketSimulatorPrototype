@@ -38,19 +38,22 @@ async function gameTick() {
         if (marketData.activeInjection && marketData.injectionTicksLeft > 0) {
             switch(marketData.activeInjection) {
                 case 'recession': injectionModifier = { trend: -0.015, volMultiplier: 1.5, targetSector: 'all' }; break;
-                case 'tech_boom': injectionModifier = { trend: 0.025, volMultiplier: 1.2, targetSector: 'Tech' }; break;
+                case 'tech_boom': injectionModifier = { trend: 0.025, volMultiplier: 1.2, targetSector: 'Technology' }; break;
                 case 'rate_hike': injectionModifier = { trend: -0.02, volMultiplier: 1.1, targetSector: 'all' }; break;
                 case 'inflation': injectionModifier = { trend: 0, volMultiplier: 2.5, targetSector: 'all' }; break;
                 case 'recovery': injectionModifier = { trend: 0.005, volMultiplier: 0.8, targetSector: 'all' }; break;
                 
-                case 'ai_boom': injectionModifier = { trend: 0.035, volMultiplier: 1.5, targetSector: 'Tech' }; break;
+                case 'ai_boom': injectionModifier = { trend: 0.035, volMultiplier: 1.5, targetSector: 'Technology' }; break;
                 case 'energy_crisis': injectionModifier = { trend: 0.04, volMultiplier: 2.0, targetSector: 'Energy' }; break;
-                case 'retail_collapse': injectionModifier = { trend: -0.03, volMultiplier: 1.8, targetSector: 'Retail' }; break;
-                case 'fintech_surge': injectionModifier = { trend: 0.025, volMultiplier: 1.3, targetSector: 'Finance' }; break;
+                case 'retail_collapse': injectionModifier = { trend: -0.03, volMultiplier: 1.8, targetSector: 'Consumer Discretionary' }; break;
+                case 'fintech_surge': injectionModifier = { trend: 0.025, volMultiplier: 1.3, targetSector: 'Financials' }; break;
                 case 'health_scare': injectionModifier = { trend: -0.025, volMultiplier: 2.5, targetSector: 'Healthcare' }; break;
-                case 'transport_disruption': injectionModifier = { trend: -0.02, volMultiplier: 1.5, targetSector: 'Transport' }; break;
+                case 'transport_disruption': injectionModifier = { trend: -0.02, volMultiplier: 1.5, targetSector: 'Transportation' }; break;
                 case 'housing_crash': injectionModifier = { trend: -0.035, volMultiplier: 1.2, targetSector: 'Real Estate' }; break;
-                case 'industrial_slowdown': injectionModifier = { trend: -0.015, volMultiplier: 0.9, targetSector: 'Industrial' }; break;
+                case 'industrial_slowdown': injectionModifier = { trend: -0.015, volMultiplier: 0.9, targetSector: 'Industrials' }; break;
+                case 'staples_defensive_rally': injectionModifier = { trend: 0.01, volMultiplier: 0.7, targetSector: 'Consumer Staples' }; break;
+                case 'commodity_shock': injectionModifier = { trend: -0.02, volMultiplier: 1.6, targetSector: 'Materials' }; break;
+
             }
             marketData.injectionTicksLeft--;
             if (marketData.injectionTicksLeft === 0) marketData.activeInjection = null;

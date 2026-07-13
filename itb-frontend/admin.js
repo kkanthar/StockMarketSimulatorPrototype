@@ -680,6 +680,10 @@ onSnapshot(logQuery, (snap) => {
 });
 
 // 4. Admin Actions
+window.openNewsFeed = () => {
+    window.open('news-feed.html', '_blank');
+};
+
 window.triggerInjection = async (type) => {
     if (currentSessionEnded) return;
     try {
